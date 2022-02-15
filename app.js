@@ -4,12 +4,12 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
 const mongoose = require("mongoose");
-const encrypt = require("mongoose-encryption");
+const md5 = require("md5");
 
 const port = process.env.PORT || 3000;
 const app = express();
 
-console.log(process.env.SUPER_LONG_SECRET_PHRASE);
+console.log(md5("123456"));
 
 app.use(express.static("public"));
 app.set('view engine', 'ejs');
@@ -22,11 +22,6 @@ const userSchema = new mongoose.Schema ({
   email: String,
   password: String
 });
-
-// move to process.env.SUPER_LONG_SECRET_PHRASE
-const secret = process.env.SUPER_LONG_SECRET_PHRASE;
-userSchema.plugin(encrypt, {secret: secret, encryptedFields: ["password"]});
-
 
 const User = new mongoose.model("User", userSchema);
 
@@ -45,7 +40,7 @@ app.get("/register", (req, res)=> {
 app.post("/register", async (req, res) => {
   const newUser = new User({
     email: req.body.username,
-    password: req.body.password
+    password: md5(req.body.password)
   });
   try{
     const savedUser = await newUser.save();
@@ -60,7 +55,7 @@ app.post("/register", async (req, res) => {
 
 app.post("/login", async (req, res) => {
   const username = req.body.username;
-  const password = req.body.password;
+  const password = md5(req.body.password);
 
   try {
     const foundUser = await User.findOne({email: username});
