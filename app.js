@@ -37,7 +37,8 @@ mongoose.connect("mongodb://localhost:27017/userDB");
 const userSchema = new mongoose.Schema({
   email: String,
   googleId: String,
-  password: String
+  password: String,
+  secret: String
 });
 
 // MONGOOSE PASSPORT PLUGIN
@@ -113,10 +114,20 @@ app.get("/register", (req, res) => {
   res.render("register");
 });
 
-app.get("/secrets", (req, res) => {
+app.get("/secrets", async (req, res) => {
+  try {
+    const usersWithSecrets = await User.find({ secret: { $ne: null }});
+    console.log(usersWithSecrets);
+    res.render("secrets", {usersWithSecrets});
+  } catch (error) {
+      console.log(error);
+  }
+});
+
+app.get("/submit", (req, res) => {
   if (req.isAuthenticated()) {
-    console.log(`Secrets route - Authenticated`);
-    res.render("secrets");
+    console.log(`Submit route - Authenticated`);
+    res.render("submit");
   } else {
     res.redirect("login");
   }
@@ -169,6 +180,25 @@ app.post("/login", async (req, res) => {
       } catch (error) {
         console.log(`Login FAILED:  ${error}`);
       }
+    }
+  });
+});
+
+app.post("/submit", (req, res) => {
+  const submittedSecret = req.body.secret;
+
+  console.log(`LOGGED IN USER:  ${req.user.id}`);
+
+  User.findById(req.user.id, (err, foundUser) => {
+    if (err) {
+      console.log(err);
+      return;
+    }
+    if (foundUser) {
+      foundUser.secret = submittedSecret;
+      foundUser.save(function() {
+        res.redirect("/secrets");
+      });
     }
   });
 });
